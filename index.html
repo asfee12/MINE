@@ -1,0 +1,2635 @@
+<!DOCTYPE html> 
+<html lang="id"> 
+<head> 
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>JEJAK - Diary & Mental Health Companion</title> 
+     
+    <!-- Libraries --> 
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script> 
+    <script 
+src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script> 
+    <link rel="stylesheet" 
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+     
+    <style> 
+        /* ===== VARIABLES & RESET ===== */ 
+        :root { 
+            --primary: #4f46e5; 
+            --primary-light: #818cf8; 
+            --secondary: #10b981; 
+            --background: #f8fafc; 
+            --surface: #ffffff; 
+            --text-primary: #1e293b; 
+            --text-secondary: #64748b; 
+            --text-tertiary: #94a3b8; 
+            --border: #e2e8f0; 
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); 
+            --radius: 12px; 
+            --radius-lg: 20px; 
+        } 
+         
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        } 
+         
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, 
+Ubuntu, sans-serif; 
+            background: var(--background); 
+            color: var(--text-primary); 
+            line-height: 1.6; 
+            min-height: 100vh; 
+        } 
+         
+        /* ===== LAYOUT ===== */ 
+        .app-container { 
+            display: flex; 
+            min-height: 100vh; 
+        } 
+         
+        .sidebar { 
+            width: 280px; 
+            background: var(--surface); 
+            border-right: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+            position: fixed; 
+            height: 100vh; 
+            z-index: 100; 
+        } 
+         
+        .main-content { 
+            flex: 1; 
+            margin-left: 280px; 
+            padding: 30px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        } 
+         
+        /* ===== SIDEBAR ===== */ 
+        .sidebar-header { 
+            padding: 30px; 
+            border-bottom: 1px solid var(--border); 
+        } 
+         
+        .app-logo { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin-bottom: 30px; 
+        } 
+         
+        .app-logo i { 
+            font-size: 24px; 
+            color: var(--primary); 
+        } 
+         
+        .app-logo h1 { 
+            font-size: 20px; 
+            font-weight: 600; 
+            color: var(--text-primary); 
+        } 
+         
+        .user-profile { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 16px; 
+            background: var(--background); 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+        } 
+         
+        .user-avatar { 
+            width: 40px; 
+            height: 40px; 
+            background: linear-gradient(135deg, var(--primary), var(--primary-light)); 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-weight: 500; 
+        } 
+         
+        .user-info h3 { 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: var(--text-primary); 
+        } 
+         
+        .user-info p { 
+            font-size: 12px; 
+            color: var(--text-secondary); 
+        } 
+         
+        .nav-menu { 
+            flex: 1; 
+            padding: 24px 0; 
+            overflow-y: auto; 
+        } 
+         
+        .nav-section { 
+            margin-bottom: 24px; 
+        } 
+         
+        .nav-section-title { 
+            font-size: 12px; 
+            font-weight: 600; 
+            color: var(--text-tertiary); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            padding: 0 24px; 
+            margin-bottom: 12px; 
+        } 
+         
+        .nav-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            padding: 12px 24px; 
+            color: var(--text-secondary); 
+            text-decoration: none; 
+            transition: all 0.2s; 
+            cursor: pointer; 
+            border-left: 3px solid transparent; 
+        } 
+         
+        .nav-item:hover { 
+            background: var(--background); 
+            color: var(--text-primary); 
+        } 
+         
+        .nav-item.active { 
+            background: var(--background); 
+            color: var(--primary); 
+            border-left-color: var(--primary); 
+        } 
+         
+        .nav-item i { 
+            width: 20px; 
+            text-align: center; 
+        } 
+         
+        .sidebar-footer { 
+            padding: 24px; 
+            border-top: 1px solid var(--border); 
+        } 
+         
+        .logout-btn { 
+            width: 100%; 
+            padding: 12px; 
+            background: transparent; 
+            border: 1px solid var(--border); 
+            color: var(--text-secondary); 
+            border-radius: var(--radius); 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            transition: all 0.2s; 
+        } 
+         
+        .logout-btn:hover { 
+            background: var(--background); 
+            color: var(--text-primary); 
+        } 
+         
+        /* ===== DASHBOARD ===== */ 
+        .dashboard-container { 
+            padding: 30px; 
+        } 
+         
+        .welcome-section { 
+            margin-bottom: 40px; 
+        } 
+         
+        .welcome-message { 
+            background: var(--surface); 
+            padding: 40px; 
+            border-radius: var(--radius-lg); 
+            box-shadow: var(--shadow); 
+            border: 1px solid var(--border); 
+        } 
+         
+        .welcome-message h1 { 
+            font-size: 32px; 
+            font-weight: 500; 
+            margin-bottom: 12px; 
+            color: var(--text-primary); 
+        } 
+         
+        .welcome-message p { 
+            font-size: 16px; 
+            color: var(--text-secondary); 
+            max-width: 600px; 
+        } 
+         
+        .quick-stats { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 40px; 
+        } 
+         
+        .stat-card { 
+            background: var(--surface); 
+            padding: 24px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+            box-shadow: var(--shadow); 
+        } 
+         
+        .stat-card h3 { 
+            font-size: 14px; 
+            font-weight: 600; 
+            color: var(--text-secondary); 
+            margin-bottom: 8px; 
+        } 
+         
+        .stat-card .value { 
+            font-size: 32px; 
+            font-weight: 700; 
+            color: var(--text-primary); 
+            margin-bottom: 4px; 
+        } 
+         
+        .stat-card .description { 
+            font-size: 13px; 
+            color: var(--text-tertiary); 
+        } 
+         
+        .quick-actions { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 40px; 
+        } 
+         
+        .action-card { 
+            background: var(--surface); 
+            padding: 30px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+            box-shadow: var(--shadow); 
+            transition: transform 0.2s; 
+            cursor: pointer; 
+            text-align: center; 
+        } 
+         
+        .action-card:hover { 
+            transform: translateY(-2px); 
+        } 
+         
+        .action-card i { 
+            font-size: 36px; 
+            color: var(--primary); 
+            margin-bottom: 16px; 
+        } 
+         
+        .action-card h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+            color: var(--text-primary); 
+        } 
+         
+        .action-card p { 
+            font-size: 14px; 
+            color: var(--text-secondary); 
+        } 
+         
+        .analysis-status { 
+            background: linear-gradient(135deg, var(--primary), var(--primary-light)); 
+            color: white; 
+            padding: 24px; 
+            border-radius: var(--radius); 
+            margin-bottom: 40px; 
+        } 
+         
+        .analysis-status h3 { 
+            font-size: 18px; 
+            margin-bottom: 8px; 
+        } 
+         
+        .analysis-status p { 
+            opacity: 0.9; 
+            font-size: 14px; 
+        } 
+         
+        /* ===== DIARY ===== */ 
+        .diary-container { 
+            padding: 30px; 
+            max-width: 800px; 
+            margin: 0 auto; 
+        } 
+         
+        .diary-header { 
+            margin-bottom: 30px; 
+        } 
+         
+        .diary-header h1 { 
+            font-size: 28px; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+        } 
+         
+        .diary-header p { 
+            color: var(--text-secondary); 
+            font-size: 16px; 
+        } 
+         
+        .diary-editor { 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            box-shadow: var(--shadow); 
+            overflow: hidden; 
+        } 
+         
+        .editor-header { 
+            padding: 20px; 
+            border-bottom: 1px solid var(--border); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        } 
+         
+        .editor-header h3 { 
+            font-size: 16px; 
+            font-weight: 600; 
+        } 
+         
+        .timestamp { 
+            color: var(--text-tertiary); 
+            font-size: 14px; 
+        } 
+         
+        textarea { 
+            width: 100%; 
+            min-height: 300px; 
+            padding: 20px; 
+            border: none; 
+            resize: vertical; 
+            font-family: inherit; 
+            font-size: 16px; 
+            line-height: 1.6; 
+            color: var(--text-primary); 
+            background: transparent; 
+        } 
+         
+        textarea:focus { 
+            outline: none; 
+        } 
+         
+        textarea::placeholder { 
+            color: var(--text-tertiary); 
+            font-style: italic; 
+        } 
+         
+        .editor-footer { 
+            padding: 20px; 
+            border-top: 1px solid var(--border); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        } 
+         
+        .word-count { 
+            color: var(--text-tertiary); 
+            font-size: 14px; 
+        } 
+         
+        .editor-actions { 
+            display: flex; 
+            gap: 12px; 
+        } 
+         
+        .btn { 
+            padding: 10px 24px; 
+            border-radius: var(--radius); 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            border: 1px solid var(--border); 
+            background: var(--surface); 
+            color: var(--text-primary); 
+        } 
+         
+        .btn:hover { 
+            background: var(--background); 
+        } 
+         
+        .btn-primary { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+        } 
+         
+        .btn-primary:hover { 
+            background: var(--primary-light); 
+        } 
+         
+        .privacy-notice { 
+            margin-top: 20px; 
+            padding: 16px; 
+            background: var(--background); 
+            border-radius: var(--radius); 
+            font-size: 14px; 
+            color: var(--text-secondary); 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+        } 
+         
+        .privacy-notice i { 
+            color: var(--secondary); 
+        } 
+         
+        /* ===== HISTORY ===== */ 
+        .history-container { 
+            padding: 30px; 
+        } 
+         
+        .history-header { 
+            margin-bottom: 30px; 
+        } 
+         
+        .history-header h1 { 
+            font-size: 28px; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+        } 
+         
+        .history-header p { 
+            color: var(--text-secondary); 
+            font-size: 16px; 
+        } 
+         
+        .filters { 
+            display: flex; 
+            gap: 12px; 
+            margin-bottom: 30px; 
+            flex-wrap: wrap; 
+        } 
+         
+        .filter-btn { 
+            padding: 8px 16px; 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            color: var(--text-secondary); 
+            cursor: pointer; 
+            font-size: 14px; 
+            transition: all 0.2s; 
+        } 
+         
+        .filter-btn:hover { 
+            background: var(--background); 
+        } 
+         
+        .filter-btn.active { 
+            background: var(--primary); 
+            color: white; 
+            border-color: var(--primary); 
+        } 
+         
+        .entries-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px; 
+        } 
+         
+        .entry-card { 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            padding: 24px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+        } 
+         
+        .entry-card:hover { 
+            box-shadow: var(--shadow); 
+        } 
+         
+        .entry-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-start; 
+            margin-bottom: 12px; 
+        } 
+         
+        .entry-date { 
+            font-size: 14px; 
+            color: var(--text-tertiary); 
+        } 
+         
+        .entry-preview { 
+            color: var(--text-primary); 
+            margin-bottom: 16px; 
+            line-height: 1.6; 
+            display: -webkit-box; 
+            -webkit-line-clamp: 3; 
+            -webkit-box-orient: vertical; 
+            overflow: hidden; 
+        } 
+         
+        .entry-actions { 
+            display: flex; 
+            gap: 12px; 
+            opacity: 0; 
+            transition: opacity 0.2s; 
+        } 
+         
+        .entry-card:hover .entry-actions { 
+            opacity: 1; 
+        } 
+         
+        .action-btn { 
+            padding: 6px 12px; 
+            background: var(--background); 
+            border: 1px solid var(--border); 
+            border-radius: 6px; 
+            color: var(--text-secondary); 
+            font-size: 13px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+        } 
+         
+        .action-btn:hover { 
+            background: var(--surface); 
+        } 
+         
+        /* ===== ANALYSIS ===== */ 
+        .analysis-container { 
+            padding: 30px; 
+            max-width: 900px; 
+            margin: 0 auto; 
+        } 
+         
+        .analysis-header { 
+            margin-bottom: 40px; 
+        } 
+         
+        .analysis-header h1 { 
+            font-size: 28px; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+        } 
+         
+        .analysis-header p { 
+            color: var(--text-secondary); 
+            font-size: 16px; 
+        } 
+         
+        .analysis-controls { 
+            background: var(--surface); 
+            padding: 24px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+            margin-bottom: 30px; 
+        } 
+         
+        .analysis-controls h3 { 
+            font-size: 16px; 
+            margin-bottom: 16px; 
+            color: var(--text-primary); 
+        } 
+         
+        .period-selector { 
+            display: flex; 
+            gap: 12px; 
+            margin-bottom: 20px; 
+            flex-wrap: wrap; 
+        } 
+         
+        .period-btn { 
+            padding: 8px 16px; 
+            background: var(--background); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            color: var(--text-secondary); 
+            cursor: pointer; 
+            font-size: 14px; 
+            transition: all 0.2s; 
+        } 
+         
+        .period-btn:hover { 
+            background: var(--surface); 
+        } 
+         
+        .period-btn.active { 
+            background: var(--primary); 
+            color: white; 
+            border-color: var(--primary); 
+        } 
+         
+        .generate-btn { 
+            padding: 12px 24px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: var(--radius); 
+            font-size: 14px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            transition: all 0.2s; 
+        } 
+         
+        .generate-btn:hover { 
+            background: var(--primary-light); 
+        } 
+         
+        .analysis-result { 
+            background: var(--surface); 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            overflow: hidden; 
+            box-shadow: var(--shadow); 
+        } 
+         
+        .analysis-section { 
+            padding: 32px; 
+            border-bottom: 1px solid var(--border); 
+        } 
+         
+        .analysis-section:last-child { 
+            border-bottom: none; 
+        } 
+         
+        .section-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            margin-bottom: 20px; 
+        } 
+         
+        .section-header i { 
+            color: var(--primary); 
+            font-size: 20px; 
+        } 
+         
+        .section-header h3 { 
+            font-size: 18px; 
+            font-weight: 600; 
+            color: var(--text-primary); 
+        } 
+         
+        .section-content { 
+            color: var(--text-primary); 
+            line-height: 1.8; 
+        } 
+         
+        .narrative-text { 
+            font-size: 16px; 
+            margin-bottom: 20px; 
+        } 
+         
+        .reflective-questions { 
+            background: var(--background); 
+            padding: 20px; 
+            border-radius: var(--radius); 
+            margin-top: 20px; 
+        } 
+         
+        .reflective-questions h4 { 
+            font-size: 15px; 
+            margin-bottom: 12px; 
+            color: var(--text-secondary); 
+        } 
+         
+        .question-list { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px; 
+        } 
+         
+        .question-list li { 
+            list-style: none; 
+            padding-left: 20px; 
+            position: relative; 
+            color: var(--text-primary); 
+        } 
+         
+        .question-list li:before { 
+            content: "•"; 
+            color: var(--primary); 
+            position: absolute; 
+            left: 0; 
+        } 
+         
+        .disclaimer { 
+            background: linear-gradient(135deg, #fef3c7, #fde68a); 
+            padding: 20px; 
+            border-radius: var(--radius); 
+            margin-top: 30px; 
+            border: 1px solid #fbbf24; 
+        } 
+         
+        .disclaimer h4 { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            margin-bottom: 8px; 
+            color: #92400e; 
+        } 
+         
+        .disclaimer p { 
+            color: #92400e; 
+            font-size: 14px; 
+            line-height: 1.6; 
+        } 
+         
+        /* ===== TRENDS ===== */ 
+        .trends-container { 
+            padding: 30px; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+        } 
+         
+        .trends-header { 
+            margin-bottom: 40px; 
+        } 
+         
+        .trends-header h1 { 
+            font-size: 28px; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+        } 
+         
+        .trends-header p { 
+            color: var(--text-secondary); 
+            font-size: 16px; 
+        } 
+         
+        .chart-container { 
+            background: var(--surface); 
+            padding: 30px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+            margin-bottom: 40px; 
+            box-shadow: var(--shadow); 
+        } 
+         
+        .trend-analysis { 
+            background: var(--surface); 
+            padding: 32px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+        } 
+         
+        /* ===== INSIGHTS ===== */ 
+        .insights-container { 
+            padding: 30px; 
+            max-width: 1000px; 
+            margin: 0 auto; 
+        } 
+         
+        .insights-header { 
+            margin-bottom: 40px; 
+        } 
+         
+        .insights-header h1 { 
+            font-size: 28px; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+        } 
+         
+        .insights-header p { 
+            color: var(--text-secondary); 
+            font-size: 16px; 
+        } 
+         
+        .insights-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 24px; 
+        } 
+         
+        .insight-card { 
+            background: var(--surface); 
+            padding: 24px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+            box-shadow: var(--shadow); 
+        } 
+         
+        .insight-card h3 { 
+            font-size: 16px; 
+            font-weight: 600; 
+            margin-bottom: 12px; 
+            color: var(--text-primary); 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+        } 
+         
+        .insight-card h3 i { 
+            color: var(--primary); 
+        } 
+         
+        .insight-card p { 
+            color: var(--text-secondary); 
+            font-size: 14px; 
+            line-height: 1.6; 
+        } 
+         
+        /* ===== SETTINGS ===== */ 
+        .settings-container { 
+            padding: 30px; 
+            max-width: 800px; 
+            margin: 0 auto; 
+        } 
+         
+        .settings-header { 
+            margin-bottom: 40px; 
+        } 
+         
+        .settings-header h1 { 
+            font-size: 28px; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+        } 
+         
+        .settings-header p { 
+            color: var(--text-secondary); 
+            font-size: 16px; 
+        } 
+         
+        .settings-section { 
+            background: var(--surface); 
+            padding: 32px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--border); 
+            margin-bottom: 24px; 
+            box-shadow: var(--shadow); 
+        } 
+         
+        .settings-section h2 { 
+            font-size: 20px; 
+            font-weight: 600; 
+            margin-bottom: 24px; 
+            color: var(--text-primary); 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+        } 
+         
+        .settings-section h2 i { 
+            color: var(--primary); 
+        } 
+         
+        .setting-item { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 20px 0; 
+            border-bottom: 1px solid var(--border); 
+        } 
+         
+        .setting-item:last-child { 
+            border-bottom: none; 
+        } 
+         
+        .setting-info h3 { 
+            font-size: 15px; 
+            font-weight: 600; 
+            margin-bottom: 4px; 
+            color: var(--text-primary); 
+        } 
+         
+        .setting-info p { 
+            font-size: 14px; 
+            color: var(--text-secondary); 
+        } 
+         
+        .toggle-switch { 
+            position: relative; 
+            width: 50px; 
+            height: 26px; 
+        } 
+         
+        .toggle-switch input { 
+            opacity: 0; 
+            width: 0; 
+            height: 0; 
+        } 
+         
+        .slider { 
+            position: absolute; 
+            cursor: pointer; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            background-color: var(--border); 
+            transition: .4s; 
+            border-radius: 34px; 
+        } 
+         
+        .slider:before { 
+            position: absolute; 
+            content: ""; 
+            height: 18px; 
+            width: 18px; 
+            left: 4px; 
+            bottom: 4px; 
+            background-color: white; 
+            transition: .4s; 
+            border-radius: 50%; 
+        } 
+         
+        input:checked + .slider { 
+            background-color: var(--primary); 
+        } 
+         
+        input:checked + .slider:before { 
+            transform: translateX(24px); 
+        } 
+         
+        .btn-danger { 
+            background: #ef4444; 
+            color: white; 
+            border: none; 
+        } 
+         
+        .btn-danger:hover { 
+            background: #dc2626; 
+        } 
+         
+        /* ===== RESPONSIVE ===== */ 
+        @media (max-width: 1024px) { 
+            .sidebar { 
+                width: 240px; 
+            } 
+             
+            .main-content { 
+                margin-left: 240px; 
+            } 
+        } 
+         
+        @media (max-width: 768px) { 
+            .app-container { 
+                flex-direction: column; 
+            } 
+             
+            .sidebar { 
+                width: 100%; 
+                height: auto; 
+                position: static; 
+                border-right: none; 
+                border-bottom: 1px solid var(--border); 
+            } 
+             
+            .nav-menu { 
+                display: none; 
+            } 
+             
+            .sidebar.active .nav-menu { 
+                display: block; 
+            } 
+             
+            .main-content { 
+                margin-left: 0; 
+                padding: 20px; 
+            } 
+             
+            .mobile-menu-btn { 
+                position: fixed; 
+                bottom: 20px; 
+                right: 20px; 
+                width: 56px; 
+                height: 56px; 
+                background: var(--primary); 
+                color: white; 
+                border-radius: 50%; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                font-size: 20px; 
+                cursor: pointer; 
+                z-index: 1000; 
+                box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3); 
+            } 
+             
+            .quick-stats { 
+                grid-template-columns: 1fr; 
+            } 
+             
+            .quick-actions { 
+                grid-template-columns: 1fr; 
+            } 
+        } 
+         
+        /* ===== UTILITIES ===== */ 
+        .hidden { 
+            display: none; 
+        } 
+         
+        .text-center { 
+            text-align: center; 
+        } 
+         
+        .text-muted { 
+            color: var(--text-tertiary); 
+        } 
+         
+        .mt-4 { margin-top: 1rem; } 
+        .mt-8 { margin-top: 2rem; } 
+        .mb-4 { margin-bottom: 1rem; } 
+        .mb-8 { margin-bottom: 2rem; } 
+         
+        /* ===== LOGIN ===== */ 
+        .login-container { 
+            min-height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 20px; 
+            background: linear-gradient(135deg, var(--background), #f1f5f9); 
+        } 
+         
+        .login-card { 
+            background: var(--surface); 
+            padding: 48px; 
+            border-radius: var(--radius-lg); 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); 
+            width: 100%; 
+            max-width: 400px; 
+            border: 1px solid var(--border); 
+        } 
+         
+        .login-header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+        } 
+         
+        .login-header i { 
+            font-size: 48px; 
+            color: var(--primary); 
+            margin-bottom: 20px; 
+        } 
+         
+        .login-header h1 { 
+            font-size: 28px; 
+            font-weight: 600; 
+            margin-bottom: 8px; 
+        } 
+         
+        .login-header p { 
+            color: var(--text-secondary); 
+            font-size: 15px; 
+        } 
+         
+        .input-group { 
+            margin-bottom: 24px; 
+        } 
+         
+        .input-group label { 
+            display: block; 
+            font-size: 14px; 
+            font-weight: 500; 
+            margin-bottom: 8px; 
+            color: var(--text-primary); 
+        } 
+         
+        .input-group input { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border: 1px solid var(--border); 
+            border-radius: var(--radius); 
+            font-size: 15px; 
+            transition: all 0.2s; 
+            background: var(--surface); 
+        } 
+         
+        .input-group input:focus { 
+            outline: none; 
+            border-color: var(--primary); 
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); 
+        } 
+         
+        .login-btn { 
+            width: 100%; 
+            padding: 14px; 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            border-radius: var(--radius); 
+            font-size: 15px; 
+            font-weight: 500; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+        } 
+         
+        .login-btn:hover { 
+            background: var(--primary-light); 
+        } 
+         
+        .guest-notice { 
+            margin-top: 24px; 
+            padding: 16px; 
+            background: var(--background); 
+            border-radius: var(--radius); 
+            font-size: 14px; 
+            color: var(--text-secondary); 
+            text-align: center; 
+        } 
+         
+        .guest-notice a { 
+            color: var(--primary); 
+            text-decoration: none; 
+            font-weight: 500; 
+        } 
+         
+        .guest-notice a:hover { 
+            text-decoration: underline; 
+        } 
+    </style> 
+</head> 
+<body> 
+ 
+    <!-- Login Screen --> 
+    <div id="loginScreen" class="login-container"> 
+        <div class="login-card"> 
+            <div class="login-header"> 
+                <i class="fas fa-book-open"></i> 
+                <h1>JEJAK</h1> 
+                <p>Diary & Mental Health Companion</p> 
+            </div> 
+             
+            <div class="input-group"> 
+                <label>Username atau Email</label> 
+                <input type="text" id="loginUsername" placeholder="Masukkan username atau 
+email"> 
+            </div> 
+             
+            <div class="input-group"> 
+                <label>Password</label> 
+                <input type="password" id="loginPassword" placeholder="Masukkan password"> 
+            </div> 
+             
+            <button class="login-btn" onclick="login()"> 
+                <i class="fas fa-sign-in-alt"></i> 
+                Masuk ke Aplikasi 
+            </button> 
+             
+            <div class="guest-notice mt-4"> 
+                Belum punya akun? <a href="#" onclick="showRegister()">Buat akun baru</a> 
+            </div> 
+        </div> 
+    </div> 
+ 
+    <!-- Main App --> 
+    <div id="appContainer" class="app-container hidden"> 
+        <!-- Mobile Menu Button --> 
+        <div class="mobile-menu-btn" onclick="toggleSidebar()"> 
+            <i class="fas fa-bars"></i> 
+        </div> 
+         
+        <!-- Sidebar --> 
+        <div class="sidebar" id="sidebar"> 
+            <div class="sidebar-header"> 
+                <div class="app-logo"> 
+                    <i class="fas fa-book-open"></i> 
+                    <h1>JEJAK</h1> 
+                </div> 
+                 
+                <div class="user-profile"> 
+                    <div class="user-avatar" id="userAvatar">U</div> 
+                    <div class="user-info"> 
+                        <h3 id="userName">Pengguna</h3> 
+                        <p id="userStatus">Status: Aktif</p> 
+                    </div> 
+                </div> 
+            </div> 
+             
+            <div class="nav-menu"> 
+                <div class="nav-section"> 
+                    <div class="nav-section-title">Menu Utama</div> 
+                    <div class="nav-item active" onclick="showSection('dashboard')"> 
+                        <i class="fas fa-home"></i> 
+                        <span>Dashboard</span> 
+                    </div> 
+                    <div class="nav-item" onclick="showSection('diary')"> 
+                        <i class="fas fa-pen"></i> 
+                        <span>Diary</span> 
+                    </div> 
+                    <div class="nav-item" onclick="showSection('history')"> 
+                        <i class="fas fa-history"></i> 
+                        <span>History</span> 
+                    </div> 
+                </div> 
+                 
+                <div class="nav-section"> 
+                    <div class="nav-section-title">Analisis & Insight</div> 
+                    <div class="nav-item" onclick="showSection('analysis')"> 
+                        <i class="fas fa-chart-bar"></i> 
+                        <span>Analisis Psikologi</span> 
+                    </div> 
+                    <div class="nav-item" onclick="showSection('trends')"> 
+                        <i class="fas fa-chart-line"></i> 
+                        <span>Trend Kesehatan Mental</span> 
+                    </div> 
+                    <div class="nav-item" onclick="showSection('insights')"> 
+                        <i class="fas fa-lightbulb"></i> 
+                        <span>Insights</span> 
+                    </div> 
+                </div> 
+                 
+                <div class="nav-section"> 
+                    <div class="nav-section-title">Pengaturan</div> 
+                    <div class="nav-item" onclick="showSection('settings')"> 
+                        <i class="fas fa-cog"></i> 
+                        <span>Pengaturan</span> 
+                    </div> 
+                    <div class="nav-item" onclick="showSection('account')"> 
+                        <i class="fas fa-user"></i> 
+                        <span>Akun Pengguna</span> 
+                    </div> 
+                    <div class="nav-item" onclick="showSection('privacy')"> 
+                        <i class="fas fa-shield-alt"></i> 
+                        <span>Privasi & Data</span> 
+                    </div> 
+                </div> 
+            </div> 
+             
+            <div class="sidebar-footer"> 
+                <button class="logout-btn" onclick="logout()"> 
+                    <i class="fas fa-sign-out-alt"></i> 
+                    Keluar 
+                </button> 
+            </div> 
+        </div> 
+         
+        <!-- Main Content --> 
+        <div class="main-content"> 
+            <!-- Dashboard Section --> 
+            <div id="dashboardSection" class="dashboard-container"> 
+                <div class="welcome-section"> 
+                    <div class="welcome-message"> 
+                        <h1 id="greeting">Selamat datang kembali.</h1> 
+                        <p>Kamu ingin menulis atau melihat perkembanganmu?</p> 
+                    </div> 
+                </div> 
+                 
+                <div class="quick-stats"> 
+                    <div class="stat-card"> 
+                        <h3>Total Tulisan</h3> 
+                        <div class="value" id="totalEntries">0</div> 
+                        <div class="description">Catatan yang tersimpan</div> 
+                    </div> 
+                     
+                    <div class="stat-card"> 
+                        <h3>Terakhir Menulis</h3> 
+                        <div class="value" id="lastEntryDate">-</div> 
+                        <div class="description">Hari/tanggal terakhir</div> 
+                    </div> 
+                     
+                    <div class="stat-card"> 
+                        <h3>Frekuensi Menulis</h3> 
+                        <div class="value" id="writingFrequency">-</div> 
+                        <div class="description">Rata-rata per minggu</div> 
+                    </div> 
+                </div> 
+                 
+                <div class="quick-actions"> 
+                    <div class="action-card" onclick="showSection('diary')"> 
+                        <i class="fas fa-pen"></i> 
+                        <h3>Tulis Diary</h3> 
+                        <p>Mulai menulis refleksi hari ini</p> 
+                    </div> 
+                     
+                    <div class="action-card" onclick="showSection('history')"> 
+                        <i class="fas fa-history"></i> 
+                        <h3>Baca History</h3> 
+                        <p>Lihat arsip tulisan sebelumnya</p> 
+                    </div> 
+                     
+                    <div class="action-card" onclick="showSection('analysis')"> 
+                        <i class="fas fa-chart-bar"></i> 
+                        <h3>Analisis Psikologi</h3> 
+                        <p>Pahami dinamika batinmu</p> 
+                    </div> 
+                     
+                    <div class="action-card" onclick="showSection('trends')"> 
+                        <i class="fas fa-chart-line"></i> 
+                        <h3>Trend Mental</h3> 
+                        <p>Lihat perkembangan dari waktu ke waktu</p> 
+                    </div> 
+                     
+                    <div class="action-card" onclick="showSection('insights')"> 
+                        <i class="fas fa-lightbulb"></i> 
+                        <h3>Insights</h3> 
+                        <p>Temukan pola dalam hidupmu</p> 
+                    </div> 
+                </div> 
+                 
+                <div class="analysis-status"> 
+                    <h3>Status Analisa</h3> 
+                    <p id="analysisStatusText">Analisis tersedia untuk tulisan terakhirmu. Klik 
+"Analisis Psikologi" untuk mulai.</p> 
+                </div> 
+            </div> 
+             
+            <!-- Diary Section --> 
+            <div id="diarySection" class="diary-container hidden"> 
+                <div class="diary-header"> 
+                    <h1>Diary</h1> 
+                    <p>Ruang kosong yang aman untuk menulis apa pun.</p> 
+                </div> 
+                 
+                <div class="diary-editor"> 
+                    <div class="editor-header"> 
+                        <h3>Entri Baru</h3> 
+                        <div class="timestamp" id="currentTimestamp">Hari ini, <span 
+id="currentDate"></span></div> 
+                    </div> 
+                     
+                    <textarea id="diaryInput" placeholder="Tulis apa pun di sini. Tidak ada cara 
+benar atau salah."></textarea> 
+                     
+                    <div class="editor-footer"> 
+                        <div class="word-count"> 
+                            <span id="wordCount">0</span> kata 
+                        </div> 
+                        <div class="editor-actions"> 
+                            <button class="btn" onclick="clearDiary()">Batal</button> 
+                            <button class="btn btn-primary" onclick="saveDiary()">Simpan</button> 
+                        </div> 
+                    </div> 
+                </div> 
+                 
+                <div class="privacy-notice"> 
+                    <i class="fas fa-lock"></i> 
+                    <span>Privasi aktif. Hanya kamu yang bisa membaca ini.</span> 
+                </div> 
+            </div> 
+             
+            <!-- History Section --> 
+            <div id="historySection" class="history-container hidden"> 
+                <div class="history-header"> 
+                    <h1>History</h1> 
+                    <p>Ruang membaca ulang dan mengingat.</p> 
+                </div> 
+                 
+                <div class="filters"> 
+                    <button class="filter-btn active" onclick="filterEntries('all')">Semua</button> 
+                    <button class="filter-btn" onclick="filterEntries('week')">Minggu Ini</button> 
+                    <button class="filter-btn" onclick="filterEntries('month')">Bulan Ini</button> 
+                    <button class="filter-btn" onclick="filterEntries('year')">Tahun Ini</button> 
+                </div> 
+                 
+                <div id="entriesList" class="entries-list"> 
+                    <!-- Entries will be loaded here --> 
+                </div> 
+            </div> 
+             
+            <!-- Analysis Section --> 
+            <div id="analysisSection" class="analysis-container hidden"> 
+                <div class="analysis-header"> 
+                    <h1>Analisis Psikologi</h1> 
+                    <p>Membantu memahami dinamika batin dan kemungkinan akar masalah, 
+tanpa diagnosis.</p> 
+                </div> 
+                 
+                <div class="analysis-controls"> 
+                    <h3>Pilih Periode untuk Analisis</h3> 
+                    <div class="period-selector"> 
+                        <button class="period-btn active" onclick="selectPeriod('week')">1 
+Minggu</button> 
+                        <button class="period-btn" onclick="selectPeriod('month')">1 Bulan</button> 
+                        <button class="period-btn" onclick="selectPeriod('3months')">3 
+Bulan</button> 
+                        <button class="period-btn" onclick="selectPeriod('all')">Semua</button> 
+                    </div> 
+                    <button class="generate-btn" onclick="generateAnalysis()"> 
+                        <i class="fas fa-play"></i> 
+                        Mulai Analisis 
+                    </button> 
+                </div> 
+                 
+                <div id="analysisResult" class="analysis-result hidden"> 
+                    <div class="analysis-section"> 
+                        <div class="section-header"> 
+                            <i class="fas fa-brain"></i> 
+                            <h3>Gambaran Psikologis Umum</h3> 
+                        </div> 
+                        <div class="section-content"> 
+                            <p class="narrative-text" id="psychologicalOverview">Tampaknya dalam 
+periode ini, kondisi batinmu menunjukkan...</p> 
+                        </div> 
+                    </div> 
+                     
+                    <div class="analysis-section"> 
+                        <div class="section-header"> 
+                            <i class="fas fa-water"></i> 
+                            <h3>Dinamika Batin</h3> 
+                        </div> 
+                        <div class="section-content"> 
+                            <p class="narrative-text" id="innerDynamics">Terdapat beberapa 
+tarik-menarik emosi yang mungkin sedang terjadi...</p> 
+                        </div> 
+                    </div> 
+                     
+                    <div class="analysis-section"> 
+                        <div class="section-header"> 
+                            <i class="fas fa-search"></i> 
+                            <h3>Screening Sumber Masalah</h3> 
+                        </div> 
+                        <div class="section-content"> 
+                            <p class="narrative-text" id="problemSources">Berdasarkan tulisanmu, 
+kemungkinan sumber yang berkaitan dengan...</p> 
+                            <div class="reflective-questions"> 
+                                <h4>Pertanyaan Reflektif:</h4> 
+                                <ul class="question-list" id="reflectiveQuestions"> 
+                                    <li>Apa yang membuat ini terasa penting?</li> 
+                                    <li>Bagaimana ini memengaruhi hubunganmu dengan diri 
+sendiri?</li> 
+                                </ul> 
+                            </div> 
+                        </div> 
+                    </div> 
+                     
+                    <div class="analysis-section"> 
+                        <div class="section-header"> 
+                            <i class="fas fa-redo"></i> 
+                            <h3>Pola Masalah Berulang</h3> 
+                        </div> 
+                        <div class="section-content"> 
+                            <p class="narrative-text" id="repeatingPatterns">Tema-tema tertentu 
+tampaknya muncul beberapa kali...</p> 
+                        </div> 
+                    </div> 
+                     
+                    <div class="analysis-section"> 
+                        <div class="section-header"> 
+                            <i class="fas fa-arrows-alt-h"></i> 
+                            <h3>Dampak Psikologis</h3> 
+                        </div> 
+                        <div class="section-content"> 
+                            <p class="narrative-text" id="psychologicalImpact">Hal ini kemungkinan 
+berpengaruh pada energi mental dan fokus...</p> 
+                        </div> 
+                    </div> 
+                     
+                    <div class="analysis-section"> 
+                        <div class="section-header"> 
+                            <i class="fas fa-users"></i> 
+                            <h3>Relasi dengan Diri & Orang Lain</h3> 
+                        </div> 
+                        <div class="section-content"> 
+                            <p class="narrative-text" id="relationships">Dalam tulisanmu, terdapat 
+indikasi tentang bagaimana kamu...</p> 
+                        </div> 
+                    </div> 
+                     
+                    <div class="analysis-section"> 
+                        <div class="section-header"> 
+                            <i class="fas fa-seedling"></i> 
+                            <h3>Arah Perkembangan Psikologis</h3> 
+                        </div> 
+                        <div class="section-content"> 
+                            <p class="narrative-text" id="developmentDirection">Tampaknya ada 
+pergeseran atau stabilitas dalam...</p> 
+                        </div> 
+                    </div> 
+                     
+                    <div class="disclaimer"> 
+                        <h4><i class="fas fa-exclamation-triangle"></i> Pernyataan Penting</h4> 
+                        <p>Fitur ini bersifat reflektif dan tidak menggantikan penilaian profesional. 
+Analisis ini didasarkan pada tulisanmu dan dimaksudkan untuk membantu pemahaman diri, 
+bukan diagnosis.</p> 
+                    </div> 
+                </div> 
+            </div> 
+             
+            <!-- Trends Section --> 
+            <div id="trendsSection" class="trends-container hidden"> 
+                <div class="trends-header"> 
+                    <h1>Trend Kesehatan Mental</h1> 
+                    <p>Memantau arah dan perubahan kondisi mental dari waktu ke waktu.</p> 
+                </div> 
+                 
+                <div class="chart-container"> 
+                    <canvas id="trendChart"></canvas> 
+                </div> 
+                 
+                <div class="trend-analysis"> 
+                    <div class="section-header"> 
+                        <i class="fas fa-chart-line"></i> 
+                        <h3>Gambaran Umum Trend</h3> 
+                    </div> 
+                    <div class="section-content"> 
+                        <p class="narrative-text" id="trendOverview">Berdasarkan pola menulismu, 
+tampaknya ada...</p> 
+                    </div> 
+                </div> 
+            </div> 
+             
+            <!-- Insights Section --> 
+            <div id="insightsSection" class="insights-container hidden"> 
+                <div class="insights-header"> 
+                    <h1>Insights</h1> 
+                    <p>Menemukan pola hidup, bukan kondisi mental.</p> 
+                </div> 
+                 
+                <div id="insightsGrid" class="insights-grid"> 
+                    <!-- Insights will be loaded here --> 
+                </div> 
+            </div> 
+             
+            <!-- Settings Section --> 
+            <div id="settingsSection" class="settings-container hidden"> 
+                <div class="settings-header"> 
+                    <h1>Pengaturan</h1> 
+                    <p>Kontrol penuh atas pengalamanmu di JEJAK.</p> 
+                </div> 
+                 
+                <div class="settings-section"> 
+                    <h2><i class="fas fa-user"></i> Akun Pengguna</h2> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Mode Tamu</h3> 
+                            <p>Gunakan aplikasi tanpa akun permanen</p> 
+                        </div> 
+                        <label class="toggle-switch"> 
+                            <input type="checkbox" id="guestMode"> 
+                            <span class="slider"></span> 
+                        </label> 
+                    </div> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Hapus Akun</h3> 
+                            <p>Hapus semua data dan akun secara permanen</p> 
+                        </div> 
+                        <button class="btn btn-danger" onclick="deleteAccount()">Hapus</button> 
+                    </div> 
+                </div> 
+                 
+                <div class="settings-section"> 
+                    <h2><i class="fas fa-shield-alt"></i> Privasi & Data</h2> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Privasi Aktif Default</h3> 
+                            <p>Semua data dilindungi secara otomatis</p> 
+                        </div> 
+                        <label class="toggle-switch"> 
+                            <input type="checkbox" id="privacyActive" checked> 
+                            <span class="slider"></span> 
+                        </label> 
+                    </div> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Kontrol Analisis</h3> 
+                            <p>Tentukan kapan analisis dijalankan</p> 
+                        </div> 
+                        <label class="toggle-switch"> 
+                            <input type="checkbox" id="analysisControl" checked> 
+                            <span class="slider"></span> 
+                        </label> 
+                    </div> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Unduh Data</h3> 
+                            <p>Ekspor semua tulisan dan analisis</p> 
+                        </div> 
+                        <button class="btn" onclick="exportData()">Unduh</button> 
+                    </div> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Reset Data</h3> 
+                            <p>Hapus semua tulisan dan analisis lokal</p> 
+                        </div> 
+                        <button class="btn btn-danger" onclick="resetData()">Reset</button> 
+                    </div> 
+                </div> 
+                 
+                <div class="settings-section"> 
+                    <h2><i class="fas fa-chart-bar"></i> Analisis & Insight</h2> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Aktifkan Analisis</h3> 
+                            <p>Izinkan analisis psikologis reflektif</p> 
+                        </div> 
+                        <label class="toggle-switch"> 
+                            <input type="checkbox" id="enableAnalysis" checked> 
+                            <span class="slider"></span> 
+                        </label> 
+                    </div> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Kedalaman Analisis</h3> 
+                            <p>Tentukan tingkat detail analisis</p> 
+                        </div> 
+                        <select id="analysisDepth" class="btn"> 
+                            <option value="light">Ringan</option> 
+                            <option value="moderate" selected>Sedang</option> 
+                            <option value="deep">Mendalam</option> 
+                        </select> 
+                    </div> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Jadwal Analisis</h3> 
+                            <p>Kapan analisis otomatis dijalankan</p> 
+                        </div> 
+                        <select id="analysisSchedule" class="btn"> 
+                            <option value="manual">Manual</option> 
+                            <option value="weekly" selected>Mingguan</option> 
+                            <option value="monthly">Bulanan</option> 
+                        </select> 
+                    </div> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Reset Hasil Analisis</h3> 
+                            <p>Hapus semua hasil analisis yang tersimpan</p> 
+                        </div> 
+                        <button class="btn" onclick="resetAnalysis()">Reset</button> 
+                    </div> 
+                </div> 
+                 
+                <div class="settings-section"> 
+                    <h2><i class="fas fa-palette"></i> Tampilan & Tema</h2> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Tema Visual</h3> 
+                            <p>Pilih tema yang sesuai preferensimu</p> 
+                        </div> 
+                        <select id="themeSelect" class="btn" onchange="changeTheme()"> 
+                            <option value="light">Terang</option> 
+                            <option value="dark">Gelap</option> 
+                            <option value="auto">Otomatis</option> 
+                        </select> 
+                    </div> 
+                </div> 
+                 
+                <div class="settings-section"> 
+                    <h2><i class="fas fa-cogs"></i> Sistem</h2> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Bahasa</h3> 
+                            <p>Pilih bahasa antarmuka</p> 
+                        </div> 
+                        <select id="languageSelect" class="btn"> 
+                            <option value="id" selected>Bahasa Indonesia</option> 
+                            <option value="en">English</option> 
+                        </select> 
+                    </div> 
+                     
+                    <div class="setting-item"> 
+                        <div class="setting-info"> 
+                            <h3>Reset Aplikasi</h3> 
+                            <p>Kembalikan semua pengaturan ke default</p> 
+                        </div> 
+                        <button class="btn btn-danger" onclick="resetApp()">Reset Aplikasi</button> 
+                    </div> 
+                </div> 
+            </div> 
+        </div> 
+    </div> 
+ 
+    <script> 
+        // ====================== 
+        // 
+ 
+ 
+ KONFIGURASI APLIKASI 
+        // ====================== 
+         
+        // Prinsip Global 
+        const APP_PRINCIPLES = { 
+            sovereignty: true,      // Kedaulatan pengguna 
+            consentBased: true,     // Analisis berbasis persetujuan 
+            nonDiagnostic: true,    // Bukan alat diagnosis 
+            narrative: true,        // Naratif, bukan angka 
+            privacyByDefault: true, // Privasi aktif default 
+            safetyFirst: true       // Keamanan psikologis utama 
+        }; 
+         
+        // ====================== 
+        // 
+ 
+ 
+ INISIALISASI 
+        // ====================== 
+         
+        let currentUser = null; 
+        let currentEntries = []; 
+        let analysisResults = {}; 
+        let trendsData = {}; 
+        let insightsData = {}; 
+         
+        // Inisialisasi tanggal 
+        document.getElementById('currentDate').textContent = new 
+Date().toLocaleDateString('id-ID', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        }); 
+         
+        // ====================== 
+        // 
+ 
+ 
+ SISTEM AUTENTIKASI 
+        // ====================== 
+         
+        function login() { 
+            const username = document.getElementById('loginUsername').value.trim(); 
+            const password = document.getElementById('loginPassword').value.trim(); 
+             
+            // Validasi sederhana 
+            if (!username || !password) { 
+                alert('Harap isi username dan password'); 
+                return; 
+            } 
+             
+            // Simulasi login berhasil 
+            currentUser = { 
+                id: 'user_' + Date.now(), 
+                username: username, 
+                displayName: username.split('@')[0], 
+                createdAt: new Date().toISOString() 
+            }; 
+             
+            // Simpan di localStorage 
+            localStorage.setItem('jejak_user', JSON.stringify(currentUser)); 
+            localStorage.setItem('jejak_logged_in', 'true'); 
+             
+            // Tampilkan aplikasi 
+            showApp(); 
+             
+            // Load data 
+            loadUserData(); 
+        } 
+         
+        function showApp() { 
+            document.getElementById('loginScreen').classList.add('hidden'); 
+            document.getElementById('appContainer').classList.remove('hidden'); 
+             
+            // Update UI user 
+            if (currentUser) { 
+                document.getElementById('userName').textContent = currentUser.displayName; 
+                document.getElementById('userAvatar').textContent = 
+currentUser.displayName.charAt(0).toUpperCase(); 
+                document.getElementById('greeting').textContent = `Selamat datang kembali, 
+${currentUser.displayName}.`; 
+            } 
+        } 
+         
+        function logout() { 
+            if (confirm('Yakin ingin keluar dari aplikasi?')) { 
+                localStorage.removeItem('jejak_logged_in'); 
+                location.reload(); 
+            } 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ NAVIGASI 
+        // ====================== 
+         
+        function showSection(sectionId) { 
+            // Sembunyikan semua section 
+            const sections = ['dashboardSection', 'diarySection', 'historySection',  
+                            'analysisSection', 'trendsSection', 'insightsSection', 'settingsSection']; 
+            sections.forEach(id => { 
+                const element = document.getElementById(id); 
+                if (element) element.classList.add('hidden'); 
+            }); 
+             
+            // Tampilkan section yang dipilih 
+            const targetSection = document.getElementById(sectionId + 'Section'); 
+            if (targetSection) { 
+                targetSection.classList.remove('hidden'); 
+            } 
+             
+            // Update menu aktif 
+            document.querySelectorAll('.nav-item').forEach(item => { 
+                item.classList.remove('active'); 
+            }); 
+             
+            // Temukan menu yang sesuai 
+            const activeMenuItem = 
+document.querySelector(`.nav-item[onclick="showSection('${sectionId}')"]`); 
+            if (activeMenuItem) { 
+                activeMenuItem.classList.add('active'); 
+            } 
+             
+            // Jika mobile, tutup sidebar 
+            if (window.innerWidth <= 768) { 
+                document.getElementById('sidebar').classList.remove('active'); 
+            } 
+             
+            // Load data section 
+            switch(sectionId) { 
+                case 'dashboard': 
+                    updateDashboard(); 
+                    break; 
+                case 'history': 
+                    loadHistory(); 
+                    break; 
+                case 'analysis': 
+                    // Kosongkan hasil sebelumnya 
+                    document.getElementById('analysisResult').classList.add('hidden'); 
+                    break; 
+                case 'trends': 
+                    loadTrends(); 
+                    break; 
+                case 'insights': 
+                    loadInsights(); 
+                    break; 
+            } 
+        } 
+         
+        function toggleSidebar() { 
+            const sidebar = document.getElementById('sidebar'); 
+            sidebar.classList.toggle('active'); 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ DIARY SYSTEM 
+        // ====================== 
+         
+        function updateWordCount() { 
+            const text = document.getElementById('diaryInput').value; 
+            const wordCount = text.trim() === '' ? 0 : text.split(/\s+/).length; 
+            document.getElementById('wordCount').textContent = wordCount; 
+        } 
+         
+        // Attach event listener 
+        document.getElementById('diaryInput').addEventListener('input', updateWordCount); 
+         
+        function saveDiary() { 
+            const content = document.getElementById('diaryInput').value.trim(); 
+             
+            if (!content) { 
+                alert('Tidak ada yang ditulis untuk disimpan.'); 
+                return; 
+            } 
+             
+            if (!currentUser) { 
+                alert('Harap login terlebih dahulu.'); 
+                return; 
+            } 
+             
+            const entry = { 
+                id: 'entry_' + Date.now(), 
+                content: content, 
+                timestamp: new Date().toISOString(), 
+                date: new Date().toLocaleDateString('id-ID'), 
+                wordCount: content.split(/\s+/).length, 
+                userId: currentUser.id 
+            }; 
+             
+            // Simpan di localStorage 
+            let entries = JSON.parse(localStorage.getItem('jejak_entries') || '[]'); 
+            entries.unshift(entry); 
+            localStorage.setItem('jejak_entries', JSON.stringify(entries)); 
+             
+            // Clear editor 
+            document.getElementById('diaryInput').value = ''; 
+            updateWordCount(); 
+             
+            // Update dashboard 
+            updateDashboard(); 
+             
+            // Tampilkan konfirmasi 
+            alert('Diary berhasil disimpan.'); 
+        } 
+         
+        function clearDiary() { 
+            if (confirm('Hapus tulisan yang sedang diketik?')) { 
+                document.getElementById('diaryInput').value = ''; 
+                updateWordCount(); 
+            } 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ DASHBOARD 
+        // ====================== 
+         
+        function updateDashboard() { 
+            const entries = JSON.parse(localStorage.getItem('jejak_entries') || '[]'); 
+             
+            // Update stats 
+            document.getElementById('totalEntries').textContent = entries.length; 
+             
+            if (entries.length > 0) { 
+                const lastEntry = entries[0]; 
+                const lastDate = new Date(lastEntry.timestamp); 
+                document.getElementById('lastEntryDate').textContent = 
+lastDate.toLocaleDateString('id-ID'); 
+                 
+                // Hitung frekuensi menulis (entries per minggu) 
+                const oneWeekAgo = new Date(); 
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
+                const recentEntries = entries.filter(e => new Date(e.timestamp) > oneWeekAgo); 
+                document.getElementById('writingFrequency').textContent = recentEntries.length 
++ '/minggu'; 
+            } else { 
+                document.getElementById('lastEntryDate').textContent = '-'; 
+                document.getElementById('writingFrequency').textContent = '-'; 
+            } 
+             
+            // Update analysis status 
+            if (entries.length >= 3) { 
+                document.getElementById('analysisStatusText').textContent = 'Analisis tersedia 
+untuk tulisan terakhirmu. Klik "Analisis Psikologi" untuk mulai.'; 
+            } else { 
+                document.getElementById('analysisStatusText').textContent = 'Tulis lebih banyak 
+diary untuk melihat analisis.'; 
+            } 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ HISTORY 
+        // ====================== 
+         
+        function loadHistory(filter = 'all') { 
+            let entries = JSON.parse(localStorage.getItem('jejak_entries') || '[]'); 
+             
+            // Apply filter 
+            const now = new Date(); 
+            switch(filter) { 
+                case 'week': 
+                    const oneWeekAgo = new Date(); 
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7); 
+                    entries = entries.filter(e => new Date(e.timestamp) > oneWeekAgo); 
+                    break; 
+                case 'month': 
+                    const oneMonthAgo = new Date(); 
+                    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1); 
+                    entries = entries.filter(e => new Date(e.timestamp) > oneMonthAgo); 
+                    break; 
+                case 'year': 
+                    const oneYearAgo = new Date(); 
+                    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1); 
+                    entries = entries.filter(e => new Date(e.timestamp) > oneYearAgo); 
+                    break; 
+            } 
+             
+            const entriesList = document.getElementById('entriesList'); 
+            entriesList.innerHTML = ''; 
+             
+            if (entries.length === 0) { 
+                entriesList.innerHTML = ` 
+                    <div class="entry-card text-center"> 
+                        <p class="text-muted">Belum ada entri yang tersimpan.</p> 
+                    </div> 
+                `; 
+                return; 
+            } 
+             
+            entries.forEach(entry => { 
+                const date = new Date(entry.timestamp); 
+                const preview = entry.content.length > 200 ?  
+                    entry.content.substring(0, 200) + '...' : entry.content; 
+                 
+                const entryElement = document.createElement('div'); 
+                entryElement.className = 'entry-card'; 
+                entryElement.innerHTML = ` 
+                    <div class="entry-header"> 
+                        <div class="entry-date">${date.toLocaleDateString('id-ID', { weekday: 'long', 
+year: 'numeric', month: 'long', day: 'numeric' })}</div> 
+                    </div> 
+                    <div class="entry-preview">${preview.replace(/\n/g, '<br>')}</div> 
+                    <div class="entry-actions"> 
+                        <button class="action-btn" onclick="viewEntry('${entry.id}')"> 
+                            <i class="fas fa-eye"></i> Baca 
+                        </button> 
+                    </div> 
+                `; 
+                entriesList.appendChild(entryElement); 
+            }); 
+        } 
+         
+        function filterEntries(filter) { 
+            // Update active filter button 
+            document.querySelectorAll('.filter-btn').forEach(btn => { 
+                btn.classList.remove('active'); 
+            }); 
+            event.target.classList.add('active'); 
+             
+            // Load entries with filter 
+            loadHistory(filter); 
+        } 
+         
+        function viewEntry(entryId) { 
+            const entries = JSON.parse(localStorage.getItem('jejak_entries') || '[]'); 
+            const entry = entries.find(e => e.id === entryId); 
+             
+            if (entry) { 
+                // Show in a modal or dedicated view 
+                const content = entry.content; 
+                const date = new Date(entry.timestamp).toLocaleDateString('id-ID', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }); 
+                 
+                alert(`
+📅
+ ${date}\n\n${content}`); 
+            } 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ ANALISIS PSIKOLOGI 
+        // ====================== 
+         
+        function selectPeriod(period) { 
+            // Update active period button 
+            document.querySelectorAll('.period-btn').forEach(btn => { 
+                btn.classList.remove('active'); 
+            }); 
+            event.target.classList.add('active'); 
+        } 
+         
+        function generateAnalysis() { 
+            const entries = JSON.parse(localStorage.getItem('jejak_entries') || '[]'); 
+             
+            if (entries.length < 3) { 
+                alert('Minimal 3 entri diperlukan untuk analisis. Teruslah menulis.'); 
+                return; 
+            } 
+             
+            // Show loading state 
+            const generateBtn = document.querySelector('.generate-btn'); 
+            const originalText = generateBtn.innerHTML; 
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menganalisis...'; 
+            generateBtn.disabled = true; 
+             
+            // Simulate analysis delay 
+            setTimeout(() => { 
+                // Generate analysis based on entries 
+                const analysis = createPsychologicalAnalysis(entries); 
+                 
+                // Update UI with analysis 
+                document.getElementById('psychologicalOverview').textContent = 
+analysis.overview; 
+                document.getElementById('innerDynamics').textContent = analysis.dynamics; 
+                document.getElementById('problemSources').textContent = 
+analysis.problemSources; 
+                document.getElementById('repeatingPatterns').textContent = analysis.patterns; 
+                document.getElementById('psychologicalImpact').textContent = analysis.impact; 
+                document.getElementById('relationships').textContent = analysis.relationships; 
+                document.getElementById('developmentDirection').textContent = 
+analysis.development; 
+                 
+                // Update reflective questions 
+                const questionsList = document.getElementById('reflectiveQuestions'); 
+                questionsList.innerHTML = ''; 
+                analysis.questions.forEach(question => { 
+                    const li = document.createElement('li'); 
+                    li.textContent = question; 
+                    questionsList.appendChild(li); 
+                }); 
+                 
+                // Show analysis result 
+                document.getElementById('analysisResult').classList.remove('hidden'); 
+                 
+                // Restore button 
+                generateBtn.innerHTML = originalText; 
+                generateBtn.disabled = false; 
+            }, 2000); 
+        } 
+         
+        function createPsychologicalAnalysis(entries) { 
+            // Extract themes from entries 
+            const themes = extractThemes(entries); 
+            const emotions = analyzeEmotions(entries); 
+            const patterns = identifyPatterns(entries); 
+             
+            // Create narrative analysis 
+            return { 
+                overview: createOverview(entries, themes, emotions), 
+                dynamics: createDynamics(patterns, emotions), 
+                problemSources: createProblemSources(themes, patterns), 
+                patterns: createPatternsAnalysis(patterns), 
+                impact: createImpactAnalysis(emotions, patterns), 
+                relationships: createRelationshipsAnalysis(themes), 
+                development: createDevelopmentAnalysis(entries), 
+                questions: generateReflectiveQuestions(themes, patterns) 
+            }; 
+        } 
+         
+        function extractThemes(entries) { 
+            const commonWords = ['saya', 'aku', 'kamu', 'dia', 'mereka', 'ini', 'itu']; 
+            const wordFrequency = {}; 
+             
+            entries.forEach(entry => { 
+                const words = entry.content.toLowerCase().split(/\s+/); 
+                words.forEach(word => { 
+                    if (word.length > 3 && !commonWords.includes(word)) { 
+                        wordFrequency[word] = (wordFrequency[word] || 0) + 1; 
+                    } 
+                }); 
+            }); 
+             
+            // Return top 10 themes 
+            return Object.entries(wordFrequency) 
+                .sort((a, b) => b[1] - a[1]) 
+                .slice(0, 10) 
+                .map(([word]) => word); 
+        } 
+         
+        function analyzeEmotions(entries) { 
+            const emotionWords = { 
+                positive: ['senang', 'bahagia', 'gembira', 'puas', 'bangga', 'tenang', 'damai'], 
+                negative: ['sedih', 'kecewa', 'marah', 'kesal', 'takut', 'khawatir', 'stres'], 
+                reflective: ['mengapa', 'bagaimana', 'mungkin', 'sepertinya', 'pikir', 'rasa'] 
+            }; 
+             
+            const counts = { positive: 0, negative: 0, reflective: 0 }; 
+             
+            entries.forEach(entry => { 
+                const content = entry.content.toLowerCase(); 
+                Object.keys(emotionWords).forEach(category => { 
+                    emotionWords[category].forEach(word => { 
+                        if (content.includes(word)) { 
+                            counts[category]++; 
+                        } 
+                    }); 
+                }); 
+            }); 
+             
+            return counts; 
+        } 
+         
+        function identifyPatterns(entries) { 
+            const patterns = { 
+                timePatterns: {}, 
+                lengthPatterns: {}, 
+                emotionalPatterns: {} 
+            }; 
+             
+            // Group by day of week 
+            entries.forEach(entry => { 
+                const date = new Date(entry.timestamp); 
+                const day = date.getDay(); 
+                patterns.timePatterns[day] = (patterns.timePatterns[day] || 0) + 1; 
+                 
+                // Length patterns 
+                if (entry.wordCount < 100) patterns.lengthPatterns['pendek'] = 
+(patterns.lengthPatterns['pendek'] || 0) + 1; 
+                else if (entry.wordCount < 500) patterns.lengthPatterns['sedang'] = 
+(patterns.lengthPatterns['sedang'] || 0) + 1; 
+                else patterns.lengthPatterns['panjang'] = (patterns.lengthPatterns['panjang'] || 0) + 
+1; 
+            }); 
+             
+            return patterns; 
+        } 
+         
+        function createOverview(entries, themes, emotions) { 
+            const totalEntries = entries.length; 
+            const lastEntryDate = new Date(entries[0]?.timestamp); 
+            const daysSinceLast = Math.floor((new Date() - lastEntryDate) / (1000 * 60 * 60 * 
+24)); 
+             
+            return `Tampaknya dalam ${totalEntries} entri terakhir, dengan tulisan terakhir 
+${daysSinceLast} hari yang lalu, ada fokus pada tema-tema seperti "${themes.slice(0, 
+3).join('", "')}". Pola emosi menunjukkan ${emotions.positive > emotions.negative ? 'lebih 
+banyak nuansa positif' : 'beragam emosi'}.`; 
+        } 
+         
+        function createDynamics(patterns, emotions) { 
+            const dominantPattern = Object.entries(patterns.timePatterns).sort((a, b) => b[1] - 
+a[1])[0]; 
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']; 
+             
+            return `Terdapat beberapa tarik-menarik emosi yang mungkin sedang terjadi, dengan 
+kecenderungan menulis pada hari ${days[dominantPattern[0]]}. Pola panjang tulisan 
+bervariasi, menunjukkan ${patterns.lengthPatterns['panjang'] > 
+patterns.lengthPatterns['pendek'] ? 'kedalaman refleksi' : 'ekspresi spontan'}.`; 
+        } 
+         
+        function createProblemSources(themes, patterns) { 
+            const relationalThemes = themes.filter(t => ['keluarga', 'teman', 'pasangan', 
+'hubungan', 'komunikasi'].some(r => t.includes(r))); 
+            const personalThemes = themes.filter(t => ['diri', 'bakat', 'kemampuan', 'percaya', 
+'harga'].some(p => t.includes(p))); 
+             
+            let sources = []; 
+            if (relationalThemes.length > 0) sources.push('aspek relasional'); 
+            if (personalThemes.length > 0) sources.push('dinamika intrapersonal'); 
+            if (patterns.timePatterns[0] || patterns.timePatterns[6]) sources.push('konteks 
+situasional'); 
+             
+            return `Berdasarkan tulisanmu, kemungkinan sumber yang berkaitan dengan 
+${sources.join(', ')}. Ini tampaknya berkaitan dengan cara kamu memproses pengalaman 
+dan berelasi dengan dunia sekitar.`; 
+        } 
+         
+        function generateReflectiveQuestions(themes, patterns) { 
+            const questions = [ 
+                'Apa yang membuat tema-tema ini penting bagimu?', 
+                'Bagaimana hal-hal ini memengaruhi hubunganmu dengan diri sendiri?', 
+                'Apa yang kamu pelajari tentang pola responsmu?' 
+            ]; 
+             
+            if (patterns.timePatterns[0] || patterns.timePatterns[6]) { 
+                questions.push('Apa yang berbeda antara menulis di hari kerja dan akhir pekan?'); 
+            } 
+             
+            if (patterns.lengthPatterns['panjang'] > patterns.lengthPatterns['pendek']) { 
+                questions.push('Apa yang membuat topik tertentu membutuhkan lebih banyak 
+kata?'); 
+            } 
+             
+            return questions.slice(0, 5); 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ TRENDS 
+        // ====================== 
+         
+        function loadTrends() { 
+            const entries = JSON.parse(localStorage.getItem('jejak_entries') || '[]'); 
+             
+            if (entries.length === 0) { 
+                document.getElementById('trendOverview').textContent = 'Belum ada data yang 
+cukup untuk melihat trend. Teruslah menulis.'; 
+                return; 
+            } 
+             
+            // Prepare data for chart 
+            const monthlyData = {}; 
+            entries.forEach(entry => { 
+                const date = new Date(entry.timestamp); 
+                const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`; 
+                if (!monthlyData[monthKey]) { 
+                    monthlyData[monthKey] = { count: 0, avgLength: 0, totalLength: 0 }; 
+                } 
+                monthlyData[monthKey].count++; 
+                monthlyData[monthKey].totalLength += entry.wordCount; 
+            }); 
+             
+            // Calculate averages 
+            Object.keys(monthlyData).forEach(month => { 
+                monthlyData[month].avgLength = Math.round(monthlyData[month].totalLength / 
+monthlyData[month].count); 
+            }); 
+             
+            // Sort by date 
+            const sortedMonths = Object.keys(monthlyData).sort(); 
+             
+            // Create chart 
+            const ctx = document.getElementById('trendChart').getContext('2d'); 
+            new Chart(ctx, { 
+                type: 'line', 
+                data: { 
+                    labels: sortedMonths.map(m => { 
+                        const [year, month] = m.split('-'); 
+                        return `${month}/${year}`; 
+                    }), 
+                    datasets: [{ 
+                        label: 'Jumlah Tulisan', 
+                        data: sortedMonths.map(m => monthlyData[m].count), 
+                        borderColor: '#4f46e5', 
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)', 
+                        tension: 0.4, 
+                        fill: true 
+                    }] 
+                }, 
+                options: { 
+                    responsive: true, 
+                    plugins: { 
+                        legend: { 
+                            position: 'top', 
+                        } 
+                    }, 
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, 
+                            title: { 
+                                display: true, 
+                                text: 'Jumlah Tulisan' 
+                            } 
+                        }, 
+                        x: { 
+                            title: { 
+                                display: true, 
+                                text: 'Bulan/Tahun' 
+                            } 
+                        } 
+                    } 
+                } 
+            }); 
+             
+            // Update trend overview 
+            const trendText = createTrendOverview(monthlyData, sortedMonths); 
+            document.getElementById('trendOverview').textContent = trendText; 
+        } 
+         
+        function createTrendOverview(monthlyData, sortedMonths) { 
+            if (sortedMonths.length < 2) { 
+                return 'Data masih terbatas untuk analisis trend. Lanjutkan menulis untuk melihat 
+pola perkembangan.'; 
+            } 
+             
+            const firstMonth = sortedMonths[0]; 
+            const lastMonth = sortedMonths[sortedMonths.length - 1]; 
+            const growth = monthlyData[lastMonth].count - monthlyData[firstMonth].count; 
+             
+            let overview = 'Berdasarkan pola menulismu, tampaknya ada '; 
+            if (growth > 0) { 
+                overview += `peningkatan konsistensi menulis sebesar ${growth} tulisan per 
+bulan. `; 
+            } else if (growth < 0) { 
+                overview += `penurunan frekuensi menulis sebesar ${Math.abs(growth)} tulisan 
+per bulan. `; 
+            } else { 
+                overview += 'stabilitas dalam kebiasaan menulis. '; 
+            } 
+             
+            overview += 'Fluktuasi yang terlihat mungkin berkaitan dengan perubahan dalam 
+rutinitas atau prioritas.'; 
+             
+            return overview; 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ INSIGHTS 
+        // ====================== 
+         
+        function loadInsights() { 
+            const entries = JSON.parse(localStorage.getItem('jejak_entries') || '[]'); 
+            const insightsGrid = document.getElementById('insightsGrid'); 
+            insightsGrid.innerHTML = ''; 
+             
+            if (entries.length === 0) { 
+                insightsGrid.innerHTML = ` 
+                    <div class="insight-card text-center"> 
+                        <h3><i class="fas fa-info-circle"></i> Belum Ada Insights</h3> 
+                        <p>Mulailah menulis untuk melihat pola hidupmu.</p> 
+                    </div> 
+                `; 
+                return; 
+            } 
+             
+            // Generate insights 
+            const insights = generateInsights(entries); 
+             
+            insights.forEach(insight => { 
+                const insightCard = document.createElement('div'); 
+                insightCard.className = 'insight-card'; 
+                insightCard.innerHTML = ` 
+                    <h3><i class="${insight.icon}"></i> ${insight.title}</h3> 
+                    <p>${insight.description}</p> 
+                `; 
+                insightsGrid.appendChild(insightCard); 
+            }); 
+        } 
+         
+        function generateInsights(entries) { 
+            const insights = []; 
+             
+            // Insight 1: Writing time pattern 
+            const timePatterns = analyzeTimePatterns(entries); 
+            if (timePatterns.peakHour) { 
+                insights.push({ 
+                    icon: 'fas fa-clock', 
+                    title: 'Pola Waktu Menulis', 
+                    description: `Kamu cenderung menulis paling produktif sekitar pukul 
+${timePatterns.peakHour}.` 
+                }); 
+            } 
+             
+            // Insight 2: Theme evolution 
+            const themeEvolution = analyzeThemeEvolution(entries); 
+            if (themeEvolution.change) { 
+                insights.push({ 
+                    icon: 'fas fa-seedling', 
+                    title: 'Evolusi Tema', 
+                    description: `Tulisanmu menunjukkan pergeseran dari "${themeEvolution.old}" 
+ke "${themeEvolution.new}".` 
+                }); 
+            } 
+             
+            // Insight 3: Emotional rhythm 
+            const rhythm = analyzeEmotionalRhythm(entries); 
+            insights.push({ 
+                icon: 'fas fa-wave-square', 
+                title: 'Ritme Emosi', 
+                description: `Ada pola ${rhythm.pattern} dalam ekspresi emosimu.` 
+            }); 
+             
+            // Insight 4: Reflection depth 
+            const depth = analyzeReflectionDepth(entries); 
+            insights.push({ 
+                icon: 'fas fa-search', 
+                title: 'Kedalaman Refleksi', 
+                description: `Tulisan terakhirmu menunjukkan ${depth.level} tingkat refleksi.` 
+            }); 
+             
+            return insights.slice(0, 4); 
+        } 
+         
+        function analyzeTimePatterns(entries) { 
+            const hourCounts = {}; 
+            entries.forEach(entry => { 
+                const hour = new Date(entry.timestamp).getHours(); 
+                hourCounts[hour] = (hourCounts[hour] || 0) + 1; 
+            }); 
+             
+            const peakHour = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0]; 
+            return { 
+                peakHour: peakHour ? `${peakHour[0]}:00` : null 
+            }; 
+        } 
+         
+        // ====================== 
+        // 
+⚙
+ PENGATURAN 
+        // ====================== 
+         
+        function changeTheme() { 
+            const theme = document.getElementById('themeSelect').value; 
+            alert(`Tema diubah ke: ${theme}. Perubahan akan diterapkan setelah refresh.`); 
+        } 
+         
+        function exportData() { 
+            const entries = JSON.parse(localStorage.getItem('jejak_entries') || '[]'); 
+            const user = JSON.parse(localStorage.getItem('jejak_user') || '{}'); 
+             
+            const data = { 
+                user: user, 
+                entries: entries, 
+                exportedAt: new Date().toISOString(), 
+                totalEntries: entries.length 
+            }; 
+             
+            const dataStr = JSON.stringify(data, null, 2); 
+            const dataUri = 'data:application/json;charset=utf-8,'+ 
+encodeURIComponent(dataStr); 
+             
+            const exportFileDefaultName = `jejak-export-${new Date().getTime()}.json`; 
+             
+            const linkElement = document.createElement('a'); 
+            linkElement.setAttribute('href', dataUri); 
+            linkElement.setAttribute('download', exportFileDefaultName); 
+            linkElement.click(); 
+        } 
+         
+        function resetData() { 
+            if (confirm('Hapus semua tulisan dan analisis? Tindakan ini tidak dapat dibatalkan.')) 
+{ 
+                localStorage.removeItem('jejak_entries'); 
+                alert('Semua data telah dihapus.'); 
+                updateDashboard(); 
+                if (document.getElementById('historySection').classList.contains('hidden') === 
+false) { 
+                    loadHistory(); 
+                } 
+            } 
+        } 
+         
+        function resetAnalysis() { 
+            if (confirm('Hapus semua hasil analisis?')) { 
+                // Clear analysis results 
+                document.getElementById('analysisResult').classList.add('hidden'); 
+                alert('Hasil analisis telah dihapus.'); 
+            } 
+        } 
+         
+        function deleteAccount() { 
+            if (confirm('Hapus akun dan semua data secara permanen?')) { 
+                localStorage.clear(); 
+                alert('Akun dan semua data telah dihapus.'); 
+                location.reload(); 
+            } 
+        } 
+         
+        function resetApp() { 
+            if (confirm('Reset semua pengaturan ke default?')) { 
+                // Clear all settings 
+                const settings = ['privacyActive', 'analysisControl', 'enableAnalysis']; 
+                settings.forEach(setting => { 
+                    const element = document.getElementById(setting); 
+                    if (element) element.checked = true; 
+                }); 
+                 
+                document.getElementById('analysisDepth').value = 'moderate'; 
+                document.getElementById('analysisSchedule').value = 'weekly'; 
+                document.getElementById('themeSelect').value = 'light'; 
+                document.getElementById('languageSelect').value = 'id'; 
+                 
+                alert('Pengaturan telah direset ke default.'); 
+            } 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ DATA MANAGEMENT 
+        // ====================== 
+         
+        function loadUserData() { 
+            // Check if user is logged in 
+            const isLoggedIn = localStorage.getItem('jejak_logged_in') === 'true'; 
+            const storedUser = localStorage.getItem('jejak_user'); 
+             
+            if (isLoggedIn && storedUser) { 
+                currentUser = JSON.parse(storedUser); 
+                showApp(); 
+                updateDashboard(); 
+            } 
+        } 
+         
+        // ====================== 
+        // 
+ 
+ 
+ START APPLICATION 
+        // ====================== 
+         
+        // Initialize on load 
+        document.addEventListener('DOMContentLoaded', function() { 
+            loadUserData(); 
+             
+            // Set current date in diary 
+            document.getElementById('currentDate').textContent = new 
+Date().toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            }); 
+             
+            // Initialize word count 
+            updateWordCount(); 
+        }); 
+         
+        // Helper function for showing register form 
+        function showRegister() { 
+            alert('Fitur pendaftaran akan datang. Untuk sekarang, gunakan username apa saja 
+untuk login.'); 
+        } 
+         
+        // Add keyboard shortcut for saving (Ctrl/Cmd + Enter) 
+        document.addEventListener('keydown', function(e) { 
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { 
+                if (!document.getElementById('diarySection').classList.contains('hidden')) { 
+                    saveDiary(); 
+                } 
+            } 
+}); 
+</script> 
+</body> 
+</html
